@@ -1,0 +1,269 @@
+"use client";
+
+import { useRef, useEffect, useMemo } from "react";
+import * as THREE from "three";
+import { useGLTF, Html } from "@react-three/drei";
+import {
+  getHallLayout,
+  useBookingStore,
+  CATEGORIES_MAP,
+  Seat,
+} from "@/data/hall";
+
+const MODEL_PATH = "/models/seat.glb";
+const SOLD_COLOR = new THREE.Color("#2a2a33");
+
+export default function CinemaSeats() {
+  const gltf = useGLTF(MODEL_PATH);
+  const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
+
+  const { seats } = useMemo(() => getHallLayout(), []);
+
+  const sold = useBookingStore((s) => s.sold);
+  const selected = useBookingStore((s) => s.selected);
+  const hover = useBookingStore((s) => s.hover);
+  const focusCat = useBookingStore((s) => s.focusCat);
+  const setHover = useBookingStore((s) => s.setHover);
+  const toggle = useBookingStore((s) => s.toggle);
+  const viewSeat = useBookingStore((s) => s.viewSeat);
+
+  // Extract base geometry and material from GLB
+  const { geometry, material, glowMaterial } = useMemo(() => {
+    let mesh: THREE.Mesh | null = null;
+    gltf.scene.traverse((child) => {
+      if (!mesh && (child as THREE.Mesh).isMesh) {
+        mesh = child as THREE.Mesh;
+      }
+    });
+
+    if (!mesh) {
+      // Fallback simple chair geometry if mesh missing
+      const fallbackGeo = new THREE.BoxGeometry(0.6, 0.75, 0.6);
+      fallbackGeo.translate(0, 0.375, 0);
+      const fallbackMat = new THREE.MeshStandardMaterial({
+        color: "#ffffff",
+        roughness: 0.5,
+      });
+      const fallbackGlow = new THREE.MeshStandardMaterial({
+        color: "#0b3d32",
+        emissive: new THREE.Color("#2cf5b9"),
+        emissiveIntensity: 1.5,
+        roughness: 0.3,
+      });
+      return { geometry: fallbackGeo, material: fallbackMat, glowMaterial: fallbackGlow };
+    }
+
+    const geo = (mesh as THREE.Mesh).geometry.clone();
+    geo.computeBoundingBox();
+    const box = geo.boundingBox!;
+    geo.translate(
+      -(box.min.x + box.max.x) / 2,
+      -box.min.y,
+      -(box.min.z + box.max.z) / 2
+    );
+    const scale = 1 / (box.max.x - box.min.x);
+    geo.scale(scale, scale, scale);
+    geo.computeVertexNormals();
+
+    const mat = ((mesh as THREE.Mesh).material as THREE.Material).clone() as THREE.MeshStandardMaterial;
+
+    const glow = new THREE.MeshStandardMaterial({
+      color: "#0b3d32",
+      emissive: new THREE.Color("#2cf5b9"),
+      emissiveIntensity: 1.8,
+      roughness: 0.3,
+    });
+
+    return { geometry: geo, material: mat, glowMaterial: glow };
+  }, [gltf]);
+
+  // Transform helper
+  const matrixHelper = useMemo(() => new THREE.Matrix4(), []);
+  const positionHelper = useMemo(() => new THREE.Vector3(), []);
+  const rotationHelper = useMemo(() => new THREE.Euler(), []);
+  const scaleHelper = useMemo(() => new THREE.Vector3(), []);
+  const colorHelper = useMemo(() => new THREE.Color(), []);
+
+  const getSeatMatrix = (seat: Seat, scaleMultiplier = 1) => {
+    positionHelper.set(seat.x, seat.y, seat.z);
+    rotationHelper.set(0, seat.rotY + Math.PI, 0);
+
+    if (seat.wide) {
+      scaleHelper.set(1.5 * 0.6, 0.63, 0.78);
+    } else {
+      scaleHelper.setScalar(0.6);
+    }
+    scaleHelper.multiplyScalar(scaleMultiplier);
+
+    matrixHelper.compose(
+      positionHelper,
+      new THREE.Quaternion().setFromEuler(rotationHelper),
+      scaleHelper
+    );
+    return matrixHelper;
+  };
+
+  // Set instance matrices once
+  useEffect(() => {
+    const mesh = instancedMeshRef.current;
+    if (!mesh) return;
+
+    seats.forEach((seat, idx) => {
+      mesh.setMatrixAt(idx, getSeatMatrix(seat));
+    });
+    mesh.instanceMatrix.needsUpdate = true;
+    mesh.computeBoundingSphere();
+  }, [seats]);
+
+  // Update instance colors whenever selection, sold, hover, or focusCat changes
+  useEffect(() => {
+    const mesh = instancedMeshRef.current;
+    if (!mesh) return;
+
+    const selectedSet = new Set(selected);
+
+    seats.forEach((seat, idx) => {
+      const isSold = sold.has(idx);
+      const isSelected = selectedSet.has(idx);
+      const isHovered = idx === hover;
+
+      if (isSold) {
+        colorHelper.copy(SOLD_COLOR);
+      } else {
+        const catColor = CATEGORIES_MAP[seat.cat]?.color || "#ffffff";
+        colorHelper.set(catColor);
+
+        // Dim if focused on a different category
+        if (focusCat && seat.cat !== focusCat) {
+          colorHelper.multiplyScalar(0.18);
+        }
+
+        // Highlight hover
+        if (isHovered && !isSold) {
+          colorHelper.lerp(new THREE.Color("#ffffff"), 0.5);
+        }
+
+        // Selected seats are rendered separately with glow
+        if (isSelected) {
+          colorHelper.setScalar(0);
+        }
+      }
+
+      mesh.setColorAt(idx, colorHelper);
+    });
+
+    if (mesh.instanceColor) {
+      mesh.instanceColor.needsUpdate = true;
+    }
+  }, [seats, sold, selected, hover, focusCat]);
+
+  const hoveredSeat = hover !== null ? seats[hover] : null;
+
+  return (
+    <group>
+      {/* Main Instanced Mesh for all standard/sold/unselected seats */}
+      <instancedMesh
+        ref={instancedMeshRef}
+        args={[geometry, material, seats.length]}
+        onPointerMove={(e) => {
+          e.stopPropagation();
+          if (e.instanceId !== undefined && e.instanceId !== hover) {
+            setHover(e.instanceId);
+            document.body.style.cursor = sold.has(e.instanceId)
+              ? "not-allowed"
+              : "pointer";
+          }
+        }}
+        onPointerOut={() => {
+          setHover(null);
+          document.body.style.cursor = "";
+        }}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (e.delta > 6 || e.instanceId === undefined) return;
+          const res = toggle(e.instanceId);
+          if (!res.ok && res.reason) {
+            window.dispatchEvent(
+              new CustomEvent("cv-toast", { detail: res.reason })
+            );
+          }
+        }}
+        onDoubleClick={(e) => {
+          e.stopPropagation();
+          if (e.instanceId !== undefined) {
+            viewSeat(e.instanceId);
+          }
+        }}
+      />
+
+      {/* Selected Seats rendered with glowing green material & floating badge */}
+      {selected.map((seatIdx) => {
+        const seat = seats[seatIdx];
+        if (!seat) return null;
+        const mat = getSeatMatrix(seat, 1.03);
+
+        return (
+          <group key={seatIdx}>
+            <mesh
+              geometry={geometry}
+              material={glowMaterial}
+              matrix={mat}
+              matrixAutoUpdate={false}
+            />
+
+            {/* Floating Seat ID Tag above headrest */}
+            <group
+              position={[seat.x, seat.y, seat.z]}
+              rotation={[0, seat.rotY, 0]}
+            >
+              <mesh position={[0, 1.32, 0.42]}>
+                <planeGeometry args={[0.5, 0.26]} />
+                <meshBasicMaterial color="#04140f" transparent opacity={0.85} />
+              </mesh>
+              <Html
+                position={[0, 1.32, 0.43]}
+                center
+                distanceFactor={7}
+                className="pointer-events-none select-none text-[12px] font-bold text-mint tracking-wider"
+              >
+                {seat.id}
+              </Html>
+            </group>
+          </group>
+        );
+      })}
+
+      {/* Hover Tooltip rendered in 3D */}
+      {hoveredSeat && (
+        <Html
+          position={[hoveredSeat.x, hoveredSeat.y + 1.6, hoveredSeat.z]}
+          center
+          distanceFactor={9}
+          className="pointer-events-none select-none z-30"
+        >
+          <div className="whitespace-nowrap rounded-xl border border-white/20 bg-ink-2/95 px-3 py-2 text-white shadow-2xl backdrop-blur-md">
+            <div className="flex items-center gap-2 text-xs font-bold">
+              <span
+                className="h-2 w-2 rounded-full"
+                style={{
+                  background: sold.has(hoveredSeat.idx)
+                    ? "#555"
+                    : CATEGORIES_MAP[hoveredSeat.cat]?.color,
+                }}
+              />
+              <span>
+                Row {hoveredSeat.row} · Seat {hoveredSeat.num}
+              </span>
+            </div>
+            <div className="mt-0.5 text-[10px] text-white/60">
+              {sold.has(hoveredSeat.idx)
+                ? "Already booked"
+                : `${CATEGORIES_MAP[hoveredSeat.cat]?.name} · ₹${CATEGORIES_MAP[hoveredSeat.cat]?.price}`}
+            </div>
+          </div>
+        </Html>
+      )}
+    </group>
+  );
+}
+

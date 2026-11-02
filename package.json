@@ -1,0 +1,52 @@
+{
+  "name": "3d-cinema",
+  "version": "1.0.0",
+  "description": "<div align=\"center\">",
+  "main": "check_r3f_ver.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alagappan567/cineverse-showcase.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/alagappan567/cineverse-showcase/issues"
+  },
+  "homepage": "https://github.com/alagappan567/cineverse-showcase#readme",
+  "dependencies": {
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.2",
+    "@types/canvas-confetti": "^1.9.0",
+    "@types/three": "^0.170.0",
+    "camera-controls": "^2.9.0",
+    "canvas-confetti": "^1.9.4",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.4.3",
+    "lenis": "^1.1.18",
+    "lucide-react": "^0.475.0",
+    "motion": "^14.9.0",
+    "next": "^15.1.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1",
+    "tailwind-merge": "^3.7.0",
+    "three": "^0.170.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.3"
+  }
+}
