@@ -7,8 +7,8 @@ import { Theatre } from "@/data/theatres";
 import { calculateBill, SNACKS_MAP } from "@/data/snacks";
 import { useBookingStore, getHallLayout, CATEGORIES_MAP } from "@/data/hall";
 import { useTicketStore, BookedTicket } from "@/store/userStore";
-import { ArrowLeft, CheckCircle2, ShieldCheck, Loader2 } from "lucide-react";
-import confetti from "canvas-confetti";
+import { ArrowLeft, CheckCircle2, ShieldCheck, Loader2, Sparkles } from "lucide-react";
+import PaymentProcessingModal from "./PaymentProcessingModal";
 
 interface ReviewPayStepProps {
   movie: Movie;
@@ -50,59 +50,49 @@ export default function ReviewPayStep({
 
   const handlePay = () => {
     setPaying(true);
+  };
 
-    setTimeout(() => {
-      // Trigger festive confetti burst
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-          colors: ["#f5b942", "#2cf5b9", "#ffffff", "#9b7bff"],
-        });
-      } catch {}
+  const handlePaymentComplete = () => {
+    const bookingId = `CV-${Math.floor(100000 + Math.random() * 900000)}`;
 
-      const bookingId = `CV-${Math.floor(100000 + Math.random() * 900000)}`;
+    const snackList = Object.entries(snacks).map(([id, qty]) => ({
+      name: SNACKS_MAP[id]?.name || id,
+      qty,
+      price: SNACKS_MAP[id]?.price || 0,
+    }));
 
-      const snackList = Object.entries(snacks).map(([id, qty]) => ({
-        name: SNACKS_MAP[id]?.name || id,
-        qty,
-        price: SNACKS_MAP[id]?.price || 0,
-      }));
+    const newTicket: BookedTicket = {
+      bookingId,
+      movieSlug: movie.slug,
+      movieTitle: movie.title,
+      moviePoster: `/posters/${movie.slug}.webp`,
+      cert: movie.cert,
+      runtime: movie.runtime,
+      cityId,
+      cityName,
+      theatreId: theatre?.id || "theatre",
+      theatreName: theatre?.name || "Cinema Hall",
+      dateIdx,
+      dateStr,
+      timeStr: time,
+      format,
+      seats: selectedSeats.map((s) => s.id),
+      seatTier: selectedSeats[0] ? CATEGORIES_MAP[selectedSeats[0].cat]?.name : "Standard",
+      snacks: snackList,
+      breakdown: bill,
+      bookedAt: new Date().toLocaleDateString("en-IN", {
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }),
+      qrPayload: `CINEVERSE:${bookingId}:${movie.slug}:${selectedSeats.map((s) => s.id).join(",")}`,
+    };
 
-      const newTicket: BookedTicket = {
-        bookingId,
-        movieSlug: movie.slug,
-        movieTitle: movie.title,
-        moviePoster: `/posters/${movie.slug}.webp`,
-        cert: movie.cert,
-        runtime: movie.runtime,
-        cityId,
-        cityName,
-        theatreId: theatre?.id || "theatre",
-        theatreName: theatre?.name || "Cinema Hall",
-        dateIdx,
-        dateStr,
-        timeStr: time,
-        format,
-        seats: selectedSeats.map((s) => s.id),
-        seatTier: selectedSeats[0] ? CATEGORIES_MAP[selectedSeats[0].cat]?.name : "Standard",
-        snacks: snackList,
-        breakdown: bill,
-        bookedAt: new Date().toLocaleDateString("en-IN", {
-          day: "numeric",
-          month: "short",
-          year: "numeric",
-          hour: "2-digit",
-          minute: "2-digit",
-        }),
-        qrPayload: `CINEVERSE:${bookingId}:${movie.slug}:${selectedSeats.map((s) => s.id).join(",")}`,
-      };
-
-      addTicket(newTicket);
-      setPaying(false);
-      onSuccess(newTicket);
-    }, 1200);
+    addTicket(newTicket);
+    setPaying(false);
+    onSuccess(newTicket);
   };
 
   return (
@@ -221,14 +211,24 @@ export default function ReviewPayStep({
         >
           {paying ? (
             <>
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Processing Payment...</span>
+              <Loader2 className="h-4 w-4 animate-spin text-black" />
+              <span>Initiating Gateway...</span>
             </>
           ) : (
             <span>Pay ₹{bill.total}</span>
           )}
         </button>
       </div>
+
+      {/* Unique Futuristic Payment Processing Modal */}
+      <PaymentProcessingModal
+        isOpen={paying}
+        amount={bill.total}
+        movieTitle={movie.title}
+        seats={selectedSeats.map((s) => s.id)}
+        payMethod={payMethod}
+        onComplete={handlePaymentComplete}
+      />
     </div>
   );
 }
