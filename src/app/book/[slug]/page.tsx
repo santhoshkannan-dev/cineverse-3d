@@ -9,6 +9,8 @@ import {
   Sun,
   Moon,
   Sparkles,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { getMovieBySlug, Movie } from "@/data/movies";
 import { getCityById, getTheatreById, getDateOptions } from "@/data/theatres";
@@ -68,6 +70,8 @@ export default function BookPage({ params }: BookPageProps) {
   const setLights = useBookingStore((s) => s.setLights);
   const hd = useBookingStore((s) => s.hd);
   const setHd = useBookingStore((s) => s.setHd);
+  const sound = useBookingStore((s) => s.sound);
+  const setSound = useBookingStore((s) => s.setSound);
 
   useEffect(() => {
     const seed = `${slug}|${theatreId}|${dateIdx}|${time}`;
@@ -139,8 +143,22 @@ export default function BookPage({ params }: BookPageProps) {
             </button>
           </div>
 
-          {/* Bottom Right Lighting & Quality Toggles */}
-          <div className="absolute bottom-3 right-3 z-20 flex gap-1 rounded-full border border-white/10 bg-black/60 p-1 backdrop-blur-md">
+          {/* Bottom Right Sound, Lighting & Quality Toggles */}
+          <div className="absolute bottom-3 right-3 z-20 flex items-center gap-1.5 rounded-full border border-white/10 bg-black/75 p-1 backdrop-blur-md shadow-lg">
+            {/* Screen Playback Sound Toggle */}
+            <button
+              onClick={() => setSound(!sound)}
+              title={sound ? "Mute Screen Sound" : "Turn On Screen Sound"}
+              className={`flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold transition ${
+                sound
+                  ? "bg-mint text-black font-bold shadow-[0_0_12px_rgba(44,245,185,0.4)]"
+                  : "text-white/60 hover:text-white hover:bg-white/10"
+              }`}
+            >
+              {sound ? <Volume2 className="h-3.5 w-3.5" /> : <VolumeX className="h-3.5 w-3.5" />}
+              <span>{sound ? "Sound ON" : "Sound OFF"}</span>
+            </button>
+
             <button
               onClick={() => setLights(!lights)}
               title="Toggle House Lights"

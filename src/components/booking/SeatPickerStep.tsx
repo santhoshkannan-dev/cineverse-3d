@@ -114,23 +114,35 @@ export default function SeatPickerStep({ onProceed }: SeatPickerStepProps) {
                 <button
                   key={cat.id}
                   onClick={() => setFocusCat(active ? null : cat.id)}
-                  className={`flex w-full items-center justify-between rounded-2xl border p-3 text-left transition ${
+                  className={`group flex w-full items-center justify-between rounded-2xl border p-3 text-left transition ${
                     active
-                      ? "border-white bg-white/10"
+                      ? "border-gold/60 bg-gold/10 ring-1 ring-gold/40 shadow-[0_0_20px_rgba(245,185,66,0.12)]"
                       : "border-line bg-white/[0.02] hover:border-white/20 hover:bg-white/[0.04]"
                   }`}
                 >
                   <div className="flex items-center gap-3">
                     <span
-                      className="h-3.5 w-3.5 rounded-full shrink-0 shadow-sm"
+                      className="h-3.5 w-3.5 rounded-full shrink-0 shadow-sm transition group-hover:scale-110"
                       style={{ background: cat.color }}
                     />
                     <div>
-                      <div className="text-xs font-bold text-white">{cat.name}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-xs font-bold text-white">{cat.name}</span>
+                        {cat.rows && (
+                          <span className="rounded bg-white/10 px-1.5 py-0.5 text-[10px] font-semibold text-white/70">
+                            {cat.rows}
+                          </span>
+                        )}
+                      </div>
                       <div className="text-[10px] text-white/50">{cat.desc}</div>
                     </div>
                   </div>
-                  <span className="text-xs font-bold text-white/90">₹{cat.price}</span>
+                  <div className="text-right">
+                    <span className="text-xs font-bold text-white/90">₹{cat.price}</span>
+                    {active && (
+                      <div className="text-[9px] font-semibold text-gold">Viewing rows</div>
+                    )}
+                  </div>
                 </button>
               );
             })}

@@ -6,6 +6,7 @@ export interface SeatCategory {
   price: number;
   color: string;
   desc: string;
+  rows?: string;
 }
 
 export interface Seat {
@@ -45,6 +46,7 @@ export const SEAT_CATEGORIES: SeatCategory[] = [
     name: "Royal Recliner",
     price: 550,
     color: "#f5b942",
+    rows: "Rows P – R",
     desc: "Motorised recliners · F&B to seat",
   },
   {
@@ -52,6 +54,7 @@ export const SEAT_CATEGORIES: SeatCategory[] = [
     name: "Balcony",
     price: 320,
     color: "#9b7bff",
+    rows: "Rows S – X",
     desc: "Elevated view · centre aligned",
   },
   {
@@ -59,6 +62,7 @@ export const SEAT_CATEGORIES: SeatCategory[] = [
     name: "Prime",
     price: 240,
     color: "#1fd1a5",
+    rows: "Rows F – N",
     desc: "Sweet spot for sound & picture",
   },
   {
@@ -66,6 +70,7 @@ export const SEAT_CATEGORIES: SeatCategory[] = [
     name: "Classic",
     price: 160,
     color: "#3d8bff",
+    rows: "Rows A – E",
     desc: "Front rows · big screen energy",
   },
 ];
@@ -341,6 +346,31 @@ export const CAMERA_PRESETS = {
 
 export type CameraPresetKey = keyof typeof CAMERA_PRESETS;
 
+export const CATEGORY_CAMERA_VIEWS = {
+  classic: {
+    label: "Classic (Rows A–E)",
+    // Front rows view from slightly elevated behind
+    shot: [3.2, 6.2, 14.8, 0, 0.5, 9.0] as [number, number, number, number, number, number],
+  },
+  prime: {
+    label: "Prime (Rows F–N)",
+    // Middle rows sweet spot view
+    shot: [4.2, 8.6, 22.8, 0, 2.4, 16.0] as [number, number, number, number, number, number],
+  },
+  recliner: {
+    label: "Royal Recliner (Rows P–R)",
+    // VIP luxury rows close-up view
+    shot: [3.8, 9.6, 27.2, 0, 4.5, 22.6] as [number, number, number, number, number, number],
+  },
+  balcony: {
+    label: "Balcony (Rows S–X)",
+    // High mezzanine angle looking down over the balcony rows
+    shot: [0, 15.0, 28.5, 0, 10.5, 23.5] as [number, number, number, number, number, number],
+  },
+};
+
+export type CategoryKey = keyof typeof CATEGORY_CAMERA_VIEWS;
+
 export interface BookingState {
   sold: Set<number>;
   selected: number[];
@@ -352,6 +382,7 @@ export interface BookingState {
   tour: boolean;
   hd: boolean;
   lights: boolean;
+  sound: boolean;
   camTick: number;
   snacks: Record<string, number>;
 
@@ -368,6 +399,7 @@ export interface BookingState {
   setTour: (tour: boolean) => void;
   setHd: (hd: boolean) => void;
   setLights: (lights: boolean) => void;
+  setSound: (sound: boolean) => void;
 }
 
 export const useBookingStore = create<BookingState>((set, get) => ({
@@ -381,6 +413,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   tour: false,
   hd: true,
   lights: true,
+  sound: false,
   camTick: 0,
   snacks: {},
 
@@ -425,7 +458,13 @@ export const useBookingStore = create<BookingState>((set, get) => ({
     set({ selected: get().selected.filter((id) => !group.includes(id)) });
   },
   setHover: (hover) => set({ hover }),
-  setFocusCat: (focusCat) => set({ focusCat }),
+  setFocusCat: (focusCat) =>
+    set({
+      focusCat,
+      tour: false,
+      seatView: null,
+      camTick: get().camTick + 1,
+    }),
   setQty: (qty) => set({ qty: Math.max(1, Math.min(10, qty)) }),
   goPreset: (preset) =>
     set({ preset, seatView: null, camTick: get().camTick + 1 }),
@@ -434,5 +473,6 @@ export const useBookingStore = create<BookingState>((set, get) => ({
   setTour: (tour) => set({ tour }),
   setHd: (hd) => set({ hd }),
   setLights: (lights) => set({ lights }),
+  setSound: (sound) => set({ sound }),
 }));
 

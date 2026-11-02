@@ -4,7 +4,8 @@ import { useRef, useMemo, useEffect } from "react";
 import * as THREE from "three";
 import { useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
-import { SCREEN_DIMENSIONS } from "@/data/hall";
+import { Volume2, VolumeX } from "lucide-react";
+import { SCREEN_DIMENSIONS, useBookingStore } from "@/data/hall";
 import { Movie } from "@/data/movies";
 
 interface CinemaScreenProps {
@@ -16,6 +17,39 @@ export default function CinemaScreen({ movie, lights }: CinemaScreenProps) {
   const lightRef = useRef<THREE.PointLight>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
+
+  const sound = useBookingStore((s) => s.sound);
+  const setSound = useBookingStore((s) => s.setSound);
+
+  // Send unMute / mute commands via YouTube postMessage API
+  useEffect(() => {
+    const applySound = () => {
+      if (!iframeRef.current?.contentWindow) return;
+      try {
+        const cw = iframeRef.current.contentWindow;
+        // Broadcast listening event to YouTube API
+        cw.postMessage(JSON.stringify({ event: "listening" }), "*");
+
+        if (sound) {
+          cw.postMessage(JSON.stringify({ event: "command", func: "unMute", args: [] }), "*");
+          cw.postMessage(JSON.stringify({ event: "command", func: "setVolume", args: [100] }), "*");
+          cw.postMessage(JSON.stringify({ event: "command", func: "playVideo", args: [] }), "*");
+        } else {
+          cw.postMessage(JSON.stringify({ event: "command", func: "mute", args: [] }), "*");
+        }
+      } catch {
+        // Safe cross-origin handling
+      }
+    };
+
+    applySound();
+    const t1 = setTimeout(applySound, 500);
+    const t2 = setTimeout(applySound, 1500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+    };
+  }, [sound]);
 
   // Screen corners for visibility calculation
   const halfW = SCREEN_DIMENSIONS.width / 2 - 0.3;
@@ -58,7 +92,7 @@ export default function CinemaScreen({ movie, lights }: CinemaScreenProps) {
   });
 
   const trailerUrl = movie.trailerId
-    ? `https://www.youtube.com/embed/${movie.trailerId}?autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3&cc_load_policy=0&loop=1&playlist=${movie.trailerId}`
+    ? `https://www.youtube.com/embed/${movie.trailerId}?enablejsapi=1&autoplay=1&mute=1&controls=0&disablekb=1&fs=0&rel=0&modestbranding=1&playsinline=1&iv_load_policy=3&cc_load_policy=0&loop=1&playlist=${movie.trailerId}`
     : null;
 
   return (
@@ -100,15 +134,39 @@ export default function CinemaScreen({ movie, lights }: CinemaScreenProps) {
           className="relative overflow-hidden bg-black"
         >
           {trailerUrl ? (
-            <iframe
-              ref={iframeRef}
-              src={trailerUrl}
-              title={`${movie.title} trailer`}
-              width={1280}
-              height={Math.round((1280 * SCREEN_DIMENSIONS.height) / SCREEN_DIMENSIONS.width)}
-              allow="autoplay; encrypted-media"
-              className="h-full w-full border-0 object-cover"
-            />
+            <>
+              <iframe
+                ref={iframeRef}
+                src={trailerUrl}
+                title={`${movie.title} trailer`}
+                width={1280}
+                height={Math.round((1280 * SCREEN_DIMENSIONS.height) / SCREEN_DIMENSIONS.width)}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                className="h-full w-full border-0 object-cover"
+              />
+
+              {/* On-Screen Sound Toggle Overlay */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setSound(!sound);
+                }}
+                className="pointer-events-auto absolute bottom-4 right-4 z-20 flex items-center gap-2 rounded-full border border-white/20 bg-black/80 px-4 py-2 text-xs font-semibold text-white shadow-2xl backdrop-blur-md transition hover:scale-105 hover:border-white/40 hover:bg-black active:scale-95 cursor-pointer"
+              >
+                {sound ? (
+                  <>
+                    <Volume2 className="h-4 w-4 text-mint animate-pulse" />
+                    <span className="text-mint font-bold">Sound ON</span>
+                  </>
+                ) : (
+                  <>
+                    <VolumeX className="h-4 w-4 text-white/70" />
+                    <span className="text-white/90">Sound OFF · Click to unmute</span>
+                  </>
+                )}
+              </button>
+            </>
           ) : (
             <div className="flex h-full w-full items-center justify-center font-display text-4xl text-white/40">
               {movie.title}

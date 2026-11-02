@@ -6,7 +6,9 @@ import { useThree, useFrame } from "@react-three/fiber";
 import {
   useBookingStore,
   CAMERA_PRESETS,
+  CATEGORY_CAMERA_VIEWS,
   CameraPresetKey,
+  CategoryKey,
   HALL_DIMENSIONS,
   SCREEN_DIMENSIONS,
   getHallLayout,
@@ -19,6 +21,7 @@ export default function TheatreControls() {
 
   const preset = useBookingStore((s) => s.preset);
   const seatView = useBookingStore((s) => s.seatView);
+  const focusCat = useBookingStore((s) => s.focusCat);
   const camTick = useBookingStore((s) => s.camTick);
   const tour = useBookingStore((s) => s.tour);
   const setTour = useBookingStore((s) => s.setTour);
@@ -32,7 +35,7 @@ export default function TheatreControls() {
   const pointerStart = useRef({ x: 0, y: 0 });
   const spherical = useRef(new THREE.Spherical());
 
-  // Handle Preset or SeatView changes
+  // Handle Preset, SeatView, or Category Row navigation changes
   useEffect(() => {
     if (seatView !== null) {
       const { seats } = getHallLayout();
@@ -42,12 +45,17 @@ export default function TheatreControls() {
         targetCamPos.current.set(seat.x, seat.y + 1.12, seat.z + 0.1);
         targetLookAt.current.set(0, SCREEN_DIMENSIONS.y - 0.2, SCREEN_DIMENSIONS.z);
       }
+    } else if (focusCat && focusCat in CATEGORY_CAMERA_VIEWS) {
+      // Smoothly navigate camera to frame the selected seat class rows
+      const catShot = CATEGORY_CAMERA_VIEWS[focusCat as CategoryKey].shot;
+      targetCamPos.current.set(catShot[0], catShot[1], catShot[2]);
+      targetLookAt.current.set(catShot[3], catShot[4], catShot[5]);
     } else {
       const shot = CAMERA_PRESETS[preset]?.shot || CAMERA_PRESETS.overview.shot;
       targetCamPos.current.set(shot[0], shot[1], shot[2]);
       targetLookAt.current.set(shot[3], shot[4], shot[5]);
     }
-  }, [preset, seatView, camTick]);
+  }, [preset, seatView, focusCat, camTick]);
 
   // Handle Tour auto-advancing
   useEffect(() => {
