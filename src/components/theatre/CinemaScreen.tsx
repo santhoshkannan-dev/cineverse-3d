@@ -78,10 +78,10 @@ export default function CinemaScreen({ movie, lights }: CinemaScreenProps) {
       {/* Screen Ambient Point Light projecting into the hall */}
       <pointLight
         ref={lightRef}
-        position={[0, 0, 2.5]}
+        position={[0, 0, 3]}
         color={movie.mood[0] || "#ffffff"}
-        distance={35}
-        decay={2}
+        distance={45}
+        decay={1.4}
       />
 
       {/* HTML Video Trailer layer mapped cleanly onto the screen */}

@@ -11,7 +11,7 @@ import {
 } from "@/data/hall";
 
 const MODEL_PATH = "/models/seat.glb";
-const SOLD_COLOR = new THREE.Color("#2a2a33");
+const SOLD_COLOR = new THREE.Color("#383d50");
 
 // Reusable Three.js math scratch objects to prevent GC thrashing
 const _matrix = new THREE.Matrix4();
@@ -90,13 +90,22 @@ export default function CinemaSeats() {
     geo.scale(scale, scale, scale);
     geo.computeVertexNormals();
 
-    const mat = ((mesh as THREE.Mesh).material as THREE.Material).clone() as THREE.MeshStandardMaterial;
+    const origMat = (mesh as THREE.Mesh).material as THREE.MeshStandardMaterial;
+
+    // Use pure white base so instance colors (Gold, Violet, Mint, Sky Blue) render vibrant and authentic
+    const mat = new THREE.MeshStandardMaterial({
+      color: new THREE.Color("#ffffff"),
+      roughness: 0.38,
+      metalness: 0.12,
+      normalMap: origMat?.normalMap || null,
+      normalScale: new THREE.Vector2(0.85, 0.85),
+    });
 
     const glow = new THREE.MeshStandardMaterial({
-      color: "#0b3d32",
+      color: "#052e25",
       emissive: new THREE.Color("#2cf5b9"),
-      emissiveIntensity: 1.8,
-      roughness: 0.3,
+      emissiveIntensity: 2.2,
+      roughness: 0.2,
     });
 
     return { geometry: geo, material: mat, glowMaterial: glow };
@@ -134,17 +143,17 @@ export default function CinemaSeats() {
 
         // Dim if focused on a different category
         if (focusCat && seat.cat !== focusCat) {
-          _color.multiplyScalar(0.18);
+          _color.multiplyScalar(0.28);
         }
 
         // Highlight hover
         if (isHovered && !isSold) {
-          _color.lerp(_white, 0.5);
+          _color.lerp(_white, 0.65);
         }
 
         // Selected seats are rendered separately with glow
         if (isSelected) {
-          _color.setScalar(0);
+          _color.setScalar(0.08);
         }
       }
 
