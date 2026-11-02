@@ -20,8 +20,28 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Cineverse - Book the experience",
-  description: "A cinematic movie ticket booking experience for Tamil, Telugu and Indian cinema.",
+  title: {
+    default: "Cineverse | 3D Movie Ticket Booking Experience",
+    template: "%s | Cineverse",
+  },
+  description:
+    "Next-generation 3D cinema booking web app featuring real-time 3D seat selection, cylindrical panorama hero, and cinematic experiences across Indian cities.",
+  keywords: [
+    "Cineverse",
+    "3D Cinema",
+    "Movie Booking",
+    "Tamil Cinema",
+    "Telugu Cinema",
+    "3D Seat Selection",
+    "Three.js",
+  ],
+  authors: [{ name: "santhoshkannan007" }],
+  openGraph: {
+    title: "Cineverse | 3D Movie Ticket Booking Experience",
+    description: "Next-generation 3D cinema booking with real-time seat selection and cylindrical panorama hero.",
+    type: "website",
+    siteName: "Cineverse",
+  },
   icons: {
     icon: "/favicon.ico",
   },

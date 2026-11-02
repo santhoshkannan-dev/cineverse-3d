@@ -13,6 +13,31 @@ import {
 const MODEL_PATH = "/models/seat.glb";
 const SOLD_COLOR = new THREE.Color("#2a2a33");
 
+// Reusable Three.js math scratch objects to prevent GC thrashing
+const _matrix = new THREE.Matrix4();
+const _position = new THREE.Vector3();
+const _rotation = new THREE.Euler();
+const _scale = new THREE.Vector3();
+const _quaternion = new THREE.Quaternion();
+const _color = new THREE.Color();
+const _white = new THREE.Color("#ffffff");
+
+function computeSeatMatrix(seat: Seat, scaleMultiplier = 1): THREE.Matrix4 {
+  _position.set(seat.x, seat.y, seat.z);
+  _rotation.set(0, seat.rotY + Math.PI, 0);
+
+  if (seat.wide) {
+    _scale.set(1.5 * 0.6, 0.63, 0.78);
+  } else {
+    _scale.setScalar(0.6);
+  }
+  _scale.multiplyScalar(scaleMultiplier);
+
+  _quaternion.setFromEuler(_rotation);
+  _matrix.compose(_position, _quaternion, _scale);
+  return _matrix;
+}
+
 export default function CinemaSeats() {
   const gltf = useGLTF(MODEL_PATH);
   const instancedMeshRef = useRef<THREE.InstancedMesh>(null);
@@ -77,39 +102,13 @@ export default function CinemaSeats() {
     return { geometry: geo, material: mat, glowMaterial: glow };
   }, [gltf]);
 
-  // Transform helper
-  const matrixHelper = useMemo(() => new THREE.Matrix4(), []);
-  const positionHelper = useMemo(() => new THREE.Vector3(), []);
-  const rotationHelper = useMemo(() => new THREE.Euler(), []);
-  const scaleHelper = useMemo(() => new THREE.Vector3(), []);
-  const colorHelper = useMemo(() => new THREE.Color(), []);
-
-  const getSeatMatrix = (seat: Seat, scaleMultiplier = 1) => {
-    positionHelper.set(seat.x, seat.y, seat.z);
-    rotationHelper.set(0, seat.rotY + Math.PI, 0);
-
-    if (seat.wide) {
-      scaleHelper.set(1.5 * 0.6, 0.63, 0.78);
-    } else {
-      scaleHelper.setScalar(0.6);
-    }
-    scaleHelper.multiplyScalar(scaleMultiplier);
-
-    matrixHelper.compose(
-      positionHelper,
-      new THREE.Quaternion().setFromEuler(rotationHelper),
-      scaleHelper
-    );
-    return matrixHelper;
-  };
-
   // Set instance matrices once
   useEffect(() => {
     const mesh = instancedMeshRef.current;
     if (!mesh) return;
 
     seats.forEach((seat, idx) => {
-      mesh.setMatrixAt(idx, getSeatMatrix(seat));
+      mesh.setMatrixAt(idx, computeSeatMatrix(seat));
     });
     mesh.instanceMatrix.needsUpdate = true;
     mesh.computeBoundingSphere();
@@ -128,28 +127,28 @@ export default function CinemaSeats() {
       const isHovered = idx === hover;
 
       if (isSold) {
-        colorHelper.copy(SOLD_COLOR);
+        _color.copy(SOLD_COLOR);
       } else {
         const catColor = CATEGORIES_MAP[seat.cat]?.color || "#ffffff";
-        colorHelper.set(catColor);
+        _color.set(catColor);
 
         // Dim if focused on a different category
         if (focusCat && seat.cat !== focusCat) {
-          colorHelper.multiplyScalar(0.18);
+          _color.multiplyScalar(0.18);
         }
 
         // Highlight hover
         if (isHovered && !isSold) {
-          colorHelper.lerp(new THREE.Color("#ffffff"), 0.5);
+          _color.lerp(_white, 0.5);
         }
 
         // Selected seats are rendered separately with glow
         if (isSelected) {
-          colorHelper.setScalar(0);
+          _color.setScalar(0);
         }
       }
 
-      mesh.setColorAt(idx, colorHelper);
+      mesh.setColorAt(idx, _color);
     });
 
     if (mesh.instanceColor) {
@@ -200,7 +199,7 @@ export default function CinemaSeats() {
       {selected.map((seatIdx) => {
         const seat = seats[seatIdx];
         if (!seat) return null;
-        const mat = getSeatMatrix(seat, 1.03);
+        const mat = computeSeatMatrix(seat, 1.03).clone();
 
         return (
           <group key={seatIdx}>

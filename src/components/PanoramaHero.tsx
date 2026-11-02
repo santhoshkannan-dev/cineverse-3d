@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, useMemo } from "react";
+import { useEffect, useRef, useState, useMemo, useCallback } from "react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
@@ -88,10 +88,13 @@ export default function PanoramaHero() {
   const posterHeight = 1.5 * posterWidth;
   const titleSpace = 0.15 * posterHeight;
 
-  const handleStep = (direction: number) => {
-    targetAngle.current = snapTo(targetAngle.current ?? currentAngle.current, angleStep) - direction * angleStep;
-    angularVelocity.current = 0;
-  };
+  const handleStep = useCallback(
+    (direction: number) => {
+      targetAngle.current = snapTo(targetAngle.current ?? currentAngle.current, angleStep) - direction * angleStep;
+      angularVelocity.current = 0;
+    },
+    [angleStep]
+  );
 
   // Main 60fps physics & 3D render loop
   useEffect(() => {
@@ -221,7 +224,7 @@ export default function PanoramaHero() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [angleStep]);
+  }, [handleStep]);
 
   useEffect(() => {
     isModalOpen.current = trailerOpen;

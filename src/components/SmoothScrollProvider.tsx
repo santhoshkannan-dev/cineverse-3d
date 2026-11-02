@@ -1,10 +1,12 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { usePathname } from "next/navigation";
 import Lenis from "lenis";
 
 export default function SmoothScrollProvider({ children }: { children: React.ReactNode }) {
   const lenisRef = useRef<Lenis | null>(null);
+  const pathname = usePathname();
 
   useEffect(() => {
     const lenis = new Lenis({
@@ -14,7 +16,7 @@ export default function SmoothScrollProvider({ children }: { children: React.Rea
       gestureOrientation: "vertical",
       smoothWheel: true,
       wheelMultiplier: 1,
-      touchMultiplier: 2,
+      touchMultiplier: 1.5,
     });
     lenisRef.current = lenis;
 
@@ -29,6 +31,16 @@ export default function SmoothScrollProvider({ children }: { children: React.Rea
       lenis.destroy();
     };
   }, []);
+
+  // Pause Lenis smooth scrolling inside full-screen 3D booking experience
+  useEffect(() => {
+    if (!lenisRef.current) return;
+    if (pathname.startsWith("/book/")) {
+      lenisRef.current.stop();
+    } else {
+      lenisRef.current.start();
+    }
+  }, [pathname]);
 
   return <>{children}</>;
 }
