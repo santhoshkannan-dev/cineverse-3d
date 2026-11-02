@@ -350,22 +350,22 @@ export const CATEGORY_CAMERA_VIEWS = {
   classic: {
     label: "Classic (Rows A–E)",
     // Front rows view from slightly elevated behind
-    shot: [3.2, 6.2, 14.8, 0, 0.5, 9.0] as [number, number, number, number, number, number],
+    shot: [2.8, 5.8, 14.8, 0, 0.6, 9.0] as [number, number, number, number, number, number],
   },
   prime: {
     label: "Prime (Rows F–N)",
-    // Middle rows sweet spot view
-    shot: [4.2, 8.6, 22.8, 0, 2.4, 16.0] as [number, number, number, number, number, number],
+    // Middle rows sweet spot view in front of balcony
+    shot: [3.5, 7.8, 20.2, 0, 2.2, 15.5] as [number, number, number, number, number, number],
   },
   recliner: {
     label: "Royal Recliner (Rows P–R)",
-    // VIP luxury rows close-up view
-    shot: [3.8, 9.6, 27.2, 0, 4.5, 22.6] as [number, number, number, number, number, number],
+    // VIP luxury rows view positioned under balcony looking forward across the seats and screen
+    shot: [2.5, 6.4, 26.2, 0, 3.8, 14.0] as [number, number, number, number, number, number],
   },
   balcony: {
     label: "Balcony (Rows S–X)",
     // High mezzanine angle looking down over the balcony rows
-    shot: [0, 15.0, 28.5, 0, 10.5, 23.5] as [number, number, number, number, number, number],
+    shot: [0, 14.8, 28.5, 0, 10.2, 23.5] as [number, number, number, number, number, number],
   },
 };
 

@@ -133,6 +133,20 @@ export default function TheatreControls() {
     targetCamPos.current.y = THREE.MathUtils.clamp(targetCamPos.current.y, 1.2, ceil);
     targetCamPos.current.z = THREE.MathUtils.clamp(targetCamPos.current.z, 2.0, HALL_DIMENSIONS.backZ - 0.5);
 
+    // Collision avoidance for balcony overhang slab (z: 20.6 to 30.0, y: 7.8 to 9.3)
+    // When transitioning into under-balcony space (e.g. Royal Recliners), descend in open hall before moving back
+    if (targetCamPos.current.y < 7.6 && targetCamPos.current.z > 20.5) {
+      if (camera.position.y > 7.6) {
+        camera.position.z = Math.min(camera.position.z, 20.2);
+      }
+    }
+    // When transitioning out from under-balcony space to an upper preset, stay below until clear of the overhang
+    if (targetCamPos.current.y > 8.5 && camera.position.y < 8.0) {
+      if (camera.position.z > 20.5) {
+        camera.position.y = Math.min(camera.position.y, 7.2);
+      }
+    }
+
     // Lerp camera position
     camera.position.lerp(targetCamPos.current, 0.08);
 
